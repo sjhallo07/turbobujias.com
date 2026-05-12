@@ -1,0 +1,5 @@
+{
+  "name": "TurboBujías Pro",
+  "description": "Premium automotive e-commerce with AI-powered diagnostics, document learning for technical manuals, and RAG-integrated smart support.",
+  "requestFramePermissions": ["camera"]
+}
