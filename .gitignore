@@ -1,6 +1,18 @@
-# wrangler files
+# Dependencies
+node_modules/
+dist/
+.firebase/
+firebase-debug.log*
+.DS_Store
+
+# Wrangler files
 .wrangler
 .dev.vars*
 !.dev.vars.example
+
+# Environment variables
 .env*
 !.env.example
+
+# TypeScript
+*.tsbuildinfo

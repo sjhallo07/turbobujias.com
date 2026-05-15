@@ -51,14 +51,14 @@ export function Navbar({ onCartClick, onSearchChange, searchValue, onAuthClick, 
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-neutral-900/80 backdrop-blur-md border-b border-neutral-800">
+    <nav className="sticky top-0 z-50 bg-neutral-900/80 dark:bg-neutral-950/80 backdrop-blur-md border-b border-neutral-800 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         {/* Logo */}
         <button 
           onClick={handleHomeClick}
           className="flex items-center gap-3 hover:opacity-80 transition-opacity shrink-0 group/logo"
         >
-          <img src="/logotipo.png" alt="TurboBujías Logo" className="h-10 md:h-12 w-auto drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] group-hover/logo:drop-shadow-[0_0_12px_rgba(249,115,22,0.3)] transition-all" />
+          <img src="/logotipo.png" alt="TurboBujías Logo" className="h-10 md:h-12 w-auto drop-shadow-[0_0_8px_rgba(var(--foreground),0.1)] group-hover/logo:drop-shadow-[0_0_12px_rgba(249,115,22,0.3)] transition-all" />
         </button>
 
         {/* Currency Switcher Dropdown */}
@@ -67,7 +67,7 @@ export function Navbar({ onCartClick, onSearchChange, searchValue, onAuthClick, 
           <select
             value={selectedCurrency}
             onChange={(e) => dispatch(setSelectedCurrency(e.target.value as any))}
-            className="bg-black border border-neutral-800 text-[10px] font-black uppercase tracking-widest text-white px-2 py-1 outline-none hover:border-orange-500 transition-colors appearance-none cursor-pointer"
+            className="bg-neutral-100 dark:bg-black border border-neutral-300 dark:border-neutral-800 text-[10px] font-black uppercase tracking-widest text-neutral-900 dark:text-white px-2 py-1 outline-none hover:border-orange-500 transition-colors appearance-none cursor-pointer"
           >
             <option value="USD">USD ($)</option>
             <option value="VES">VES (Bs.)</option>
@@ -98,13 +98,13 @@ export function Navbar({ onCartClick, onSearchChange, searchValue, onAuthClick, 
             placeholder="Buscar repuestos, marcas o referencias..."
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full bg-neutral-800 text-neutral-200 pl-10 pr-20 py-2 rounded-none border border-neutral-700 focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all text-sm"
+            className="w-full bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-200 pl-10 pr-20 py-2 rounded-none border border-neutral-300 dark:border-neutral-700 focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all text-sm"
           />
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
             {searchValue && (
               <button
                 onClick={() => onSearchChange('')}
-                className="p-2 text-neutral-500 hover:text-white transition-colors"
+                className="p-2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors"
                 title="Limpiar búsqueda"
               >
                 <X size={16} />
@@ -129,7 +129,7 @@ export function Navbar({ onCartClick, onSearchChange, searchValue, onAuthClick, 
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={toggleTheme}
-            className="p-2 text-neutral-400 hover:text-white transition-colors"
+            className="p-2 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
             title="Toggle Theme"
           >
             {theme === 'light' ? <Moon size={22} /> : <Sun size={22} />}
@@ -139,7 +139,7 @@ export function Navbar({ onCartClick, onSearchChange, searchValue, onAuthClick, 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onAuthClick}
-            className="group relative flex items-center gap-2 p-2 bg-neutral-800 text-neutral-400 hover:text-white rounded-none border border-neutral-700 transition-all"
+            className="group relative flex items-center gap-2 p-2 bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white rounded-none border border-neutral-300 dark:border-neutral-700 transition-all"
             title="User Profile"
           >
             {user ? (

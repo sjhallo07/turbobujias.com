@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 
 export interface AICallOptions {
   model?: string;
@@ -9,10 +10,11 @@ export interface AICallOptions {
 }
 
 let aiClient: GoogleGenAI | null = null;
+let openaiClient: OpenAI | null = null;
 
 const getGenAI = () => {
   if (!aiClient) {
-    const key = process.env.GEMINI_API_KEY;
+    const key = (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
     if (!key) {
       throw new Error('GEMINI_API_KEY environment variable is required');
     }
@@ -21,9 +23,20 @@ const getGenAI = () => {
   return aiClient;
 };
 
+const getOpenAI = () => {
+  if (!openaiClient) {
+    const token = (import.meta as any).env?.VITE_GITHUB_TOKEN || process.env.VITE_GITHUB_TOKEN || process.env.GITHUB_TOKEN;
+    const endpoint = "https://models.github.ai/inference";
+    if (token) {
+      openaiClient = new OpenAI({ baseURL: endpoint, apiKey: token, dangerouslyAllowBrowser: true });
+    }
+  }
+  return openaiClient;
+};
+
 export const getAIResponse = async (prompt: string, options: AICallOptions = {}) => {
   const { 
-    model = 'gemini-3-flash-preview', 
+    model = 'gemini-2.0-flash', 
     systemInstruction, 
     attachments = [],
     temperature = 0.5,
@@ -73,8 +86,43 @@ export const getAIResponse = async (prompt: string, options: AICallOptions = {})
 
     return response.text || "No response generated";
   } catch (error: any) {
-    console.error('Gemini Frontend Error Details:', error);
-    // If it's a 404 or other fatal error with Gemini, try fallback
+    console.error('Gemini Provider Failed, attempting GitHub Inference...', error);
+    return await getGithubAIResponse(prompt, options);
+  }
+};
+
+const getGithubAIResponse = async (prompt: string, options: AICallOptions) => {
+  const { systemInstruction, history = [], temperature = 1.0 } = options;
+  const client = getOpenAI();
+  
+  if (!client) {
+    return await getFallbackAIResponse(prompt, options);
+  }
+
+  try {
+    const messages: any[] = [
+      { role: "system", content: systemInstruction || "You are a helpful assistant." }
+    ];
+
+    history.forEach(msg => {
+      messages.push({
+        role: msg.role === 'bot' || msg.role === 'model' ? 'assistant' : 'user',
+        content: msg.content
+      });
+    });
+
+    messages.push({ role: "user", content: prompt });
+
+    const response = await client.chat.completions.create({
+      messages,
+      temperature,
+      top_p: 1.0,
+      model: "gpt-4o" 
+    });
+
+    return response.choices[0].message.content || "No response generated from GitHub Inference";
+  } catch (err) {
+    console.error("GitHub Inference Error:", err);
     return await getFallbackAIResponse(prompt, options);
   }
 };

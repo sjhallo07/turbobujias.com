@@ -360,7 +360,7 @@ export default function App() {
   }, [compareList]);
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-orange-500/30 selection:text-orange-500 relative">
+    <div className="min-h-screen bg-neutral-950 text-white selection:bg-orange-500/30 selection:text-orange-500 relative transition-colors duration-300">
       <Helmet>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
@@ -412,7 +412,7 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-4 py-8">
         
         {/* Hero Section */}
-        <section className="relative mb-12 rounded-none overflow-hidden bg-black border border-neutral-800 min-h-[500px] flex items-center">
+        <section className="relative mb-12 rounded-none overflow-hidden bg-neutral-900 border border-neutral-800 min-h-[500px] flex items-center">
           <div className="absolute inset-0 z-0">
             <motion.div 
               initial={{ scale: 1.1, opacity: 0 }}
@@ -420,8 +420,8 @@ export default function App() {
               transition={{ duration: 2 }}
               className="w-full h-full bg-[url('https://images.unsplash.com/photo-1486006920555-c77dcf18193c?auto=format&fit=crop&q=80&w=1920')] bg-cover bg-center"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/80 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-transparent to-transparent" />
           </div>
 
           <div className="relative z-10 p-6 md:p-16 flex flex-col items-start gap-4 md:gap-6 max-w-4xl">
