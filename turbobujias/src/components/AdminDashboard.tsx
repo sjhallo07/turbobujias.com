@@ -8,7 +8,6 @@ import { Product } from '../data';
 import { generateAIImage } from '../lib/ai';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
-import { testSupabaseConnection } from '../lib/supabase';
 import { syncInventoryFromSupabaseToFirebase } from '../services/migrationService';
 import { auditLogService, AuditAction } from '../services/auditLogService';
 import { ScannerModal } from './ScannerModal';
@@ -135,8 +134,8 @@ const handleAdminLogin = (e: React.FormEvent) => {
   }, [isOpen, isAdmin]);
 
   const checkDbConnection = async () => {
-    const status = await testSupabaseConnection();
-    setIsDbConnected(status);
+    // Supabase disabled
+    setIsDbConnected(false);
   };
 
   const fetchAuditLogs = async () => {

@@ -16,6 +16,22 @@ export interface Product {
   tags?: string[];
 }
 
+export interface Customer {
+  id: string; // Firebase Auth UID
+  name: string;
+  email: string;
+  vehicleInfo?: string;
+  purchaseHistory?: string[]; // Array of product IDs
+  updatedAt: any; // Firestore Timestamp
+}
+
+export interface LearningDoc {
+  id?: string;
+  source: string; // e.g., filename, URL
+  content: string; // The text content learned
+  timestamp: any; // Firestore Timestamp
+}
+
 export const PRODUCTS: Product[] = [
   {
     id: 'bkr6eix-11',

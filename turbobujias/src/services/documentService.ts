@@ -1,7 +1,6 @@
-import { getSupabase } from '../lib/supabase';
 import { GoogleGenAI } from "@google/genai";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { collection, addDoc, query, getDocs } from 'firebase/firestore';
+import { collection, addDoc, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 const ai = new GoogleGenAI({ apiKey: (import.meta as any).env.VITE_GEMINI_API_KEY || '' });
@@ -18,9 +17,6 @@ export interface ManualChunk {
 class DocumentService {
   private async getEmbedding(text: string): Promise<number[] | null> {
     try {
-      // Need server side proxy or directly use genai
-      // It's possible we run into CORS using GoogleGenAI directly in browser if unsupported,
-      // but assuming it's supported here based on other code using it in vectorDb.
       const result = await ai.models.embedContent({
         model: 'gemini-embedding-2-preview',
         contents: [{ text }],
@@ -28,7 +24,6 @@ class DocumentService {
       return result.embeddings?.[0]?.values || null;
     } catch (err) {
       console.warn("Embedding generation failed", err);
-      // Fallback or retry
       return null;
     }
   }
@@ -80,10 +75,6 @@ class DocumentService {
     const outputDocs = await splitter.createDocuments([text]);
     console.log(`Created ${outputDocs.length} chunks from ${sourceName}. Saving to DB...`);
 
-    const supabase = getSupabase();
-    
-    // We will save to Firestore as a local manual DB since Supabase might not have 'manual_chunks' table created by user yet.
-    // AND we can save to Supabase if table exists. We'll do both or just Firestore for guaranteed unstructured insert.
     try {
       const chunksCollection = collection(db, 'manuals');
       
@@ -98,19 +89,6 @@ class DocumentService {
           metadata: doc.metadata,
           timestamp: new Date().toISOString()
         });
-        
-        // Attempt Supabase insert if user created 'manuals' table there
-        if (supabase) {
-          try {
-            await supabase.from('manual_chunks').insert({
-              source: sourceName,
-              content: doc.pageContent,
-              embedding: embedding || []
-            });
-          } catch (err) {
-            // soft fail
-          }
-        }
       }
       return true;
     } catch (err) {
@@ -126,20 +104,7 @@ class DocumentService {
 
     let results: { chunk: ManualChunk, score: number }[] = [];
 
-    // Try Supabase first if vector match is available
-    const supabase = getSupabase();
-    if (supabase) {
-      const { data, error } = await supabase.rpc('match_manuals', {
-        query_embedding: queryEmbedding,
-        match_threshold: 0.5,
-        match_count: topK
-      });
-      if (!error && data && data.length > 0) {
-        return data as ManualChunk[];
-      }
-    }
-
-    // Fallback: Read all from Firestore and do in-memory cosine similarity
+    // Read all from Firestore and do in-memory cosine similarity
     try {
       const chunksRef = collection(db, 'manuals');
       const snap = await getDocs(chunksRef);

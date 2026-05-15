@@ -16,7 +16,6 @@ import { Reviews } from './components/Reviews';
 import { RootState } from './store';
 import { addToCart, removeFromCart, toggleCart as setToggleCart, saveForLater, moveToCart, removeFromSaved, updateQuantity, selectCartTotalItems, selectCartTotalAmount } from './store/cartSlice';
 import { generateTechnicalInsight } from './lib/gemini';
-import { getSupabase } from './lib/supabase';
 import { cn, formatPrice, serializeUserDoc } from './lib/utils';
 
 import { auth, db, handleFirestoreError, OperationType } from './lib/firebase';

@@ -1,5 +1,6 @@
-import { getSupabase } from '../lib/supabase';
-import { PRODUCTS, Product } from '../data';
+import { db } from '../lib/firebase';
+import { collection, doc, setDoc } from 'firebase/firestore';
+import { PRODUCTS } from '../data';
 import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
@@ -13,29 +14,21 @@ class VectorDbService {
       });
       return result.embeddings?.[0]?.values || null;
     } catch (err) {
-      // Embedding fails in some proxy environments, gracefully return null
       return null;
     }
   }
 
   /**
-   * Syncs the local PRODUCTS to Supabase vector storage.
-   * This should be called by an admin or as part of a migration.
+   * Syncs the local PRODUCTS to Firestore.
    */
   async syncProducts() {
-    const supabase = getSupabase();
-    if (!supabase) {
-      console.error('Supabase client not initialized. Ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in Settings > Secrets.');
-      return { success: false, message: 'Supabase credentials missing' };
-    }
-
-    console.log(`Starting sync of ${PRODUCTS.length} products to Supabase...`);
+    console.log(`Starting sync of ${PRODUCTS.length} products to Firestore...`);
     let syncedCount = 0;
     let errorCount = 0;
+    const productsCollection = collection(db, 'products');
 
     for (const product of PRODUCTS) {
       try {
-        // Create a rich text representation for embedding
         const searchString = `${product.brand} ${product.name} ${product.category} ${product.oeReference || ''} ${product.description || ''}`;
         const embedding = await this.getEmbedding(searchString);
 
@@ -45,25 +38,18 @@ class VectorDbService {
           continue;
         }
 
-        const { error } = await supabase
-          .from('products')
-          .upsert({
-            id: product.id,
-            brand: product.brand,
-            name: product.name,
-            category: product.category,
-            description: product.description,
-            oe_reference: product.oeReference,
-            specs: product.specs,
-            embedding: embedding
-          });
+        await setDoc(doc(productsCollection, product.id), {
+          id: product.id,
+          brand: product.brand,
+          name: product.name,
+          category: product.category,
+          description: product.description,
+          oe_reference: product.oeReference,
+          specs: product.specs,
+          embedding: embedding
+        }, { merge: true });
 
-        if (error) {
-          console.error(`Supabase Upsert Error for ${product.id}:`, error);
-          errorCount++;
-        } else {
-          syncedCount++;
-        }
+        syncedCount++;
       } catch (err) {
         console.error(`Sync error for ${product.id}:`, err);
         errorCount++;

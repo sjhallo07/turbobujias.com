@@ -14,7 +14,6 @@ import { addToCart } from '../store/cartSlice';
 import { toggleWishlist } from '../store/wishlistSlice';
 import { RootState } from '../store';
 import { formatPrice } from '../lib/utils';
-import { getSupabase } from '../lib/supabase';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { chatService, ChatSession, UserMemory } from '../services/chatService';
 
@@ -168,24 +167,7 @@ export function ChatBot() {
         setPartnerContext(pCtx);
 
         // 2. Fetch Inventory from Supabase
-        const supabase = getSupabase();
-        if (supabase) {
-          try {
-            const { data: products, error } = await supabase
-              .from('products')
-              .select('name, brand, category, price, stock')
-              .limit(20);
-            
-            if (!error && products) {
-              const iCtx = products.map(p => 
-                `[INVENTORY] Name: ${p.name}, Brand: ${p.brand}, Category: ${p.category}, Price: ${p.price}, Stock: ${p.stock}`
-              ).join('\n');
-              setInventoryContext(iCtx);
-            }
-          } catch (supaErr) {
-            console.warn('Supabase fetch failed in ChatBot:', supaErr);
-          }
-        }
+        // Supabase disabled
       } catch (err) {
         console.error('Bot context fetch error:', err);
       }

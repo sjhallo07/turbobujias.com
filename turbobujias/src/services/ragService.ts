@@ -1,4 +1,5 @@
-import { getSupabase } from '../lib/supabase';
+import { db } from '../lib/firebase';
+import { collection, getDocs, query, where, or } from 'firebase/firestore';
 import { Product } from '../data';
 import { GoogleGenAI } from "@google/genai";
 
@@ -90,49 +91,44 @@ class RagService {
   }
 
   /**
-   * Search for relevant products in Supabase using Vector Similarity if available,
-   * otherwise fallback to keyword search + TFJS USE Cosine Similarity.
+   * Search for relevant products in Firestore using client-side vector similarity.
    */
-  async searchProducts(query: string, limit: number = 5): Promise<ScoredResult<Product>[]> {
-    const supabase = getSupabase();
-    if (!supabase) return [];
-
+  async searchProducts(queryText: string, limit: number = 5): Promise<ScoredResult<Product>[]> {
     try {
-      // 1. Try vector RPC if pgvector is set up
-      const embedding = await this.getEmbedding(query);
+      const queryEmbedding = await this.getEmbedding(queryText);
+      const productsCollection = collection(db, 'products');
       let results: ScoredResult<Product>[] = [];
 
-      if (embedding) {
-        const { data: vectorData, error: vectorError } = await supabase.rpc('match_products', {
-          query_embedding: embedding,
-          match_threshold: 0.5,
-          match_count: limit,
+      // 1. Fetch products and calculate similarity client-side
+      const snapshot = await getDocs(productsCollection);
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.embedding && data.embedding.length > 0 && queryEmbedding) {
+          const score = this.cosineSimilarity(queryEmbedding, data.embedding);
+          if (score > 0.5) {
+            results.push({ item: data as Product, score });
+          }
+        }
+      });
+
+      // 2. Fallback: Keyword search if few/no results
+      if (results.length < limit) {
+        const q = query(productsCollection, or(
+            where('name', '==', queryText), // Limited simple keyword fallback
+            where('brand', '==', queryText)
+        ));
+        const snapshot = await getDocs(q);
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            if (!results.some(r => r.item.id === data.id)) {
+                results.push({ item: data as Product, score: 0.8 });
+            }
         });
-
-        if (!vectorError && vectorData && vectorData.length > 0) {
-          results = vectorData.map((item: any) => ({
-            item: item as Product,
-            score: item.similarity
-          }));
-        }
-      }
-
-      // 2. Fallback: Keyword match
-      if (results.length === 0) {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .or(`name.ilike.%${query}%,brand.ilike.%${query}%,category.ilike.%${query}%`)
-          .limit(limit); 
-
-        if (!error && data && data.length > 0) {
-          results = data.map(item => ({ item: item as Product, score: 0.8 }));
-        }
       }
       
       // 3. Cross-reference fallback
       if (results.length < limit) {
-        const crossRefs = await this.fetchCrossReferences(query);
+        const crossRefs = await this.fetchCrossReferences(queryText);
         crossRefs.forEach(product => {
           if (!results.some(r => r.item.id === product.id)) {
             results.push({ item: product, score: 0.7 });
@@ -142,52 +138,44 @@ class RagService {
 
       return results.sort((a, b) => b.score - a.score).slice(0, limit);
     } catch (err) {
-      console.error('Supabase Product RAG Error:', err);
+      console.error('Firestore Product RAG Error:', err);
       return [];
     }
   }
 
   /**
-   * Search for relevant partners in Supabase.
+   * Search for relevant partners in Firestore using client-side vector similarity.
    */
-  async searchPartners(query: string, limit: number = 3): Promise<ScoredResult<Partner>[]> {
-    const supabase = getSupabase();
-    if (!supabase) return [];
-
+  async searchPartners(queryText: string, limit: number = 3): Promise<ScoredResult<Partner>[]> {
     try {
-      const embedding = await this.getEmbedding(query);
+      const queryEmbedding = await this.getEmbedding(queryText);
+      const partnersCollection = collection(db, 'partners');
+      let results: ScoredResult<Partner>[] = [];
 
-      if (embedding) {
-        // Option 1: Vector Search (Requires pgvector and 'match_partners' RPC in Supabase)
-        const { data: vectorData, error: vectorError } = await supabase.rpc('match_partners', {
-          query_embedding: embedding,
-          match_threshold: 0.3,
-          match_count: limit,
-        });
-
-        if (!vectorError && vectorData && vectorData.length > 0) {
-          return vectorData.map((item: any) => ({
-            item: item as Partner,
-            score: item.similarity
-          }));
+      const snapshot = await getDocs(partnersCollection);
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.embedding && data.embedding.length > 0 && queryEmbedding) {
+          const score = this.cosineSimilarity(queryEmbedding, data.embedding);
+          if (score > 0.3) {
+            results.push({ item: data as Partner, score });
+          }
         }
+      });
+
+      if (results.length === 0) {
+        // Fallback: simple fetch if no similarity
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data.name.toLowerCase().includes(queryText.toLowerCase())) {
+                results.push({ item: data as Partner, score: 1.0 });
+            }
+        });
       }
 
-      // Option 2: Full Text Search (Fallback)
-      const { data, error } = await supabase
-        .from('partners')
-        .select('*')
-        .or(`name.ilike.%${query}%,location.ilike.%${query}%,description.ilike.%${query}%,type.ilike.%${query}%`)
-        .limit(limit);
-
-      if (error) throw error;
-
-      return (data || []).map(item => ({
-        item: item as Partner,
-        score: 1.0
-      }));
+      return results.sort((a, b) => b.score - a.score).slice(0, limit);
     } catch (err) {
-      console.error('Supabase Partner RAG Error:', err);
+      console.error('Firestore Partner RAG Error:', err);
       return [];
     }
   }
