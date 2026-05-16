@@ -90,6 +90,16 @@ export default function App() {
 
   useEffect(() => {
     dispatch(fetchExchangeRates() as any);
+    
+    // Deep linking logic
+    const path = window.location.pathname;
+    if (path.startsWith('/product/')) {
+      const productId = path.split('/product/')[1];
+      const product = PRODUCTS.find(p => p.id === productId);
+      if (product) {
+        setSelectedProduct(product);
+      }
+    }
   }, [dispatch]);
 
   const [search, setSearch] = useState('');
