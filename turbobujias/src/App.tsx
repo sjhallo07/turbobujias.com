@@ -7,10 +7,10 @@ import { PRODUCTS, Product } from './data';
 import { expandSearchQuery } from './utils/searchUtils';
 import { Navbar } from './components/Navbar';
 import { ProductCard } from './components/ProductCard';
-import { ChatBot } from './components/ChatBot';
-import { CheckoutModal } from './components/CheckoutModal';
-import { WishlistDrawer } from './components/WishlistDrawer';
-import { ScannerModal } from './components/ScannerModal';
+const ChatBot = React.lazy(() => import('./components/ChatBot'));
+const CheckoutModal = React.lazy(() => import('./components/CheckoutModal'));
+const WishlistDrawer = React.lazy(() => import('./components/WishlistDrawer'));
+const ScannerModal = React.lazy(() => import('./components/ScannerModal'));
 import { CurrencyTracker } from './components/CurrencyTracker';
 import { Reviews } from './components/Reviews';
 import { RootState } from './store';
@@ -25,10 +25,10 @@ import { setUser } from './store/authSlice';
 import { fetchExchangeRates, setSelectedCurrency } from './store/currencySlice';
 import { AuthModal } from './components/AuthModal';
 
-import { AdminDashboard } from './components/AdminDashboard';
-import { UserSessionDrawer } from './components/UserSessionDrawer';
+const AdminDashboard = React.lazy(() => import('./components/AdminDashboard'));
+const UserSessionDrawer = React.lazy(() => import('./components/UserSessionDrawer'));
 import { PartnerShowcase } from './components/PartnerShowcase';
-import { MapSearch } from './components/MapSearch';
+const MapSearch = React.lazy(() => import('./components/MapSearch'));
 import { ProductSkeleton } from './components/ProductSkeleton';
 
 import { aiSearch } from './services/aiSearchService';
@@ -717,7 +717,9 @@ export default function App() {
         {/* Localization & Map Section */}
         <section className="mt-20 p-8 border border-neutral-800 bg-neutral-900">
            <h2 className="text-2xl font-black uppercase tracking-tighter mb-6 text-orange-500">Localización y Tiendas</h2>
-           <MapSearch />
+           <React.Suspense fallback={<ProductSkeleton />}>
+             <MapSearch />
+           </React.Suspense>
         </section>
       </main>
 
@@ -1048,7 +1050,9 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <ChatBot />
+      <React.Suspense fallback={<ProductSkeleton />}>
+        <ChatBot />
+      </React.Suspense>
 
       <BottomNav 
         activeTab={activeTab}
@@ -1239,40 +1243,60 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <ScannerModal 
-        isOpen={isScannerOpen}
-        onClose={() => setIsScannerOpen(false)}
-        onScanSuccess={handleScanSuccess}
-      />
+      {isScannerOpen && (
+        <React.Suspense fallback={<ProductSkeleton />}>
+          <ScannerModal 
+            isOpen={isScannerOpen}
+            onClose={() => setIsScannerOpen(false)}
+            onScanSuccess={handleScanSuccess}
+          />
+        </React.Suspense>
+      )}
 
-      <AdminDashboard 
-        isOpen={isAdminDashboardOpen}
-        onClose={() => setIsAdminDashboardOpen(false)}
-      />
+      {isAdminDashboardOpen && (
+        <React.Suspense fallback={<ProductSkeleton />}>
+          <AdminDashboard 
+            isOpen={isAdminDashboardOpen}
+            onClose={() => setIsAdminDashboardOpen(false)}
+          />
+        </React.Suspense>
+      )}
 
-      <UserSessionDrawer 
-        isOpen={isUserSessionOpen}
-        onClose={() => setIsUserSessionOpen(false)}
-        onAdminClick={() => {
-          setIsUserSessionOpen(false);
-          setIsAdminDashboardOpen(true);
-        }}
-      />
+      {isUserSessionOpen && (
+        <React.Suspense fallback={<ProductSkeleton />}>
+          <UserSessionDrawer 
+            isOpen={isUserSessionOpen}
+            onClose={() => setIsUserSessionOpen(false)}
+            onAdminClick={() => {
+              setIsUserSessionOpen(false);
+              setIsAdminDashboardOpen(true);
+            }}
+          />
+        </React.Suspense>
+      )}
 
       <AuthModal 
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
       />
 
-      <CheckoutModal 
-        isOpen={isCheckoutOpen} 
-        onClose={() => setIsCheckoutOpen(false)} 
-      />
+      {isCheckoutOpen && (
+        <React.Suspense fallback={<ProductSkeleton />}>
+          <CheckoutModal 
+            isOpen={isCheckoutOpen} 
+            onClose={() => setIsCheckoutOpen(false)} 
+          />
+        </React.Suspense>
+      )}
 
-      <WishlistDrawer 
-        isOpen={isWishlistOpen} 
-        onClose={() => setIsWishlistOpen(false)} 
-      />
+      {isWishlistOpen && (
+        <React.Suspense fallback={<ProductSkeleton />}>
+          <WishlistDrawer 
+            isOpen={isWishlistOpen} 
+            onClose={() => setIsWishlistOpen(false)} 
+          />
+        </React.Suspense>
+      )}
 
       <PartnerShowcase />
 
