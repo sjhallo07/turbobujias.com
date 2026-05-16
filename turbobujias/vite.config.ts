@@ -32,7 +32,6 @@ export default defineConfig(({ mode }) => {
               if (id.includes('firebase')) return 'firebase';
               if (id.includes('lucide-react')) return 'icons';
               if (id.includes('xlsx') || id.includes('papaparse')) return 'data-utils';
-              if (id.includes('react')) return 'react-vendor';
               return 'vendor';
             }
           }

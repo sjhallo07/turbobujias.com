@@ -1276,14 +1276,12 @@ const handleAdminLogin = (e: React.FormEvent) => {
                  </div>
                </div>
                
-               <button 
+               <button
                  onClick={async () => {
-                   const { syncInventoryFromSupabaseToFirebase } = await import('../services/migrationService');
                    await syncInventoryFromSupabaseToFirebase();
                    alert("Sync completed. Please refresh products list.");
                    fetchProducts();
-                 }}
-                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-tighter transition-all"
+                 }}                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-tighter transition-all"
                >
                  <Package size={12} className="fill-current" />
                  Sync Inventory
