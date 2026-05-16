@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, CreditCard, ShoppingBag, ExternalLink, Zap } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
@@ -18,22 +18,82 @@ export function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
   const dispatch = useDispatch();
   const paypalRef = useRef<HTMLDivElement>(null);
   const scriptLoaded = useRef(false);
+  const [isPaypalEligible, setIsPaypalEligible] = useState(false);
+  const paypalSessionRef = useRef<any>(null);
 
   useEffect(() => {
-    if (isOpen && !scriptLoaded.current && paypalRef.current) {
-      const renderPayPal = () => {
-        if (window.paypal) {
-          window.paypal.HostedButtons({
-            hostedButtonId: "RSWABDPS3U3QS",
-          }).render("#paypal-container-RSWABDPS3U3QS");
-          scriptLoaded.current = true;
+    if (isOpen && !scriptLoaded.current) {
+      const initPayPal = async () => {
+        if (window.paypal && window.paypal.createInstance) {
+          try {
+            const sdkInstance = await window.paypal.createInstance({
+              clientId: "AfUDjefFU0bu7PJxDEHfIymomMIMHIwDvcw6bb3IHEs2FWg6pnk2ZJZ9sOfR50JmPWcLkM6CtG7Rn4AL",
+              components: ["paypal-payments"],
+              pageType: "checkout",
+            });
+
+            const paymentMethods = await sdkInstance.findEligibleMethods({
+              currencyCode: "USD",
+            });
+
+            if (paymentMethods.isEligible("paypal")) {
+              const paymentSession = sdkInstance.createPayPalOneTimePaymentSession({
+                async onApprove(data: any) {
+                  const orderData = await fetch("/api/capture-order", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ orderId: data.orderId }),
+                  });
+                  console.log("Payment captured:", await orderData.json());
+                  dispatch(clearCart());
+                  onClose();
+                },
+                onCancel(data: any) { 
+                  console.log("Cancelled:", data); 
+                },
+                onError(error: any) { 
+                  console.error("Payment error:", error); 
+                },
+              });
+              paypalSessionRef.current = paymentSession;
+              setIsPaypalEligible(true);
+              scriptLoaded.current = true;
+            }
+          } catch (err) {
+            console.error("PayPal Init Error:", err);
+            setTimeout(initPayPal, 1000);
+          }
         } else {
-          setTimeout(renderPayPal, 100);
+          setTimeout(initPayPal, 100);
         }
       };
-      renderPayPal();
+      initPayPal();
     }
-  }, [isOpen]);
+  }, [isOpen, dispatch, onClose]);
+
+  const handlePayPalCheckout = async () => {
+    if (paypalSessionRef.current) {
+      try {
+        await paypalSessionRef.current.start(
+          { presentationMode: "auto" },
+          async () => {
+            const res = await fetch("/api/create-order", { 
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                amount: totalAmount,
+                currency: "USD"
+              })
+            });
+            const data = await res.json();
+            return { orderId: data.id };
+          }
+        );
+      } catch (err) {
+        console.error("PayPal Start Error:", err);
+      }
+    }
+  };
 
   const braintreeLoaded = useRef(false);
 
@@ -134,7 +194,16 @@ export function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
               <h3 className="text-white font-bold mb-2">PayPal Checkout</h3>
               <p className="text-neutral-500 text-xs mb-6">International payments via credit card or PayPal balance.</p>
               
-              <div id="paypal-container-RSWABDPS3U3QS" ref={paypalRef} className="w-full"></div>
+              {isPaypalEligible ? (
+                <button 
+                  onClick={handlePayPalCheckout}
+                  className="w-full bg-[#0070ba] text-white py-3 font-bold text-xs uppercase tracking-widest hover:bg-[#005ea6] transition-all flex items-center justify-center gap-2 rounded-lg"
+                >
+                  Pay with PayPal
+                </button>
+              ) : (
+                <div className="text-neutral-600 text-[10px] animate-pulse py-3">Initializing PayPal...</div>
+              )}
             </div>
 
             {/* Braintree Option */}
