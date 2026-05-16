@@ -7,10 +7,10 @@ import { PRODUCTS, Product } from './data';
 import { expandSearchQuery } from './utils/searchUtils';
 import { Navbar } from './components/Navbar';
 import { ProductCard } from './components/ProductCard';
-const ChatBot = React.lazy(() => import('./components/ChatBot'));
-const CheckoutModal = React.lazy(() => import('./components/CheckoutModal'));
-const WishlistDrawer = React.lazy(() => import('./components/WishlistDrawer'));
-const ScannerModal = React.lazy(() => import('./components/ScannerModal'));
+const ChatBot = React.lazy(() => import('./components/ChatBot').then(m => ({ default: m.ChatBot })));
+const CheckoutModal = React.lazy(() => import('./components/CheckoutModal').then(m => ({ default: m.CheckoutModal })));
+const WishlistDrawer = React.lazy(() => import('./components/WishlistDrawer').then(m => ({ default: m.WishlistDrawer })));
+const ScannerModal = React.lazy(() => import('./components/ScannerModal').then(m => ({ default: m.ScannerModal })));
 import { CurrencyTracker } from './components/CurrencyTracker';
 import { Reviews } from './components/Reviews';
 import { RootState } from './store';
@@ -25,10 +25,10 @@ import { setUser } from './store/authSlice';
 import { fetchExchangeRates, setSelectedCurrency } from './store/currencySlice';
 import { AuthModal } from './components/AuthModal';
 
-const AdminDashboard = React.lazy(() => import('./components/AdminDashboard'));
-const UserSessionDrawer = React.lazy(() => import('./components/UserSessionDrawer'));
+const AdminDashboard = React.lazy(() => import('./components/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
+const UserSessionDrawer = React.lazy(() => import('./components/UserSessionDrawer').then(m => ({ default: m.UserSessionDrawer })));
 import { PartnerShowcase } from './components/PartnerShowcase';
-const MapSearch = React.lazy(() => import('./components/MapSearch'));
+const MapSearch = React.lazy(() => import('./components/MapSearch').then(m => ({ default: m.MapSearch })));
 import { ProductSkeleton } from './components/ProductSkeleton';
 
 import { aiSearch } from './services/aiSearchService';
