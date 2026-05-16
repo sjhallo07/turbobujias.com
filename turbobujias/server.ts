@@ -31,6 +31,85 @@ async function startServer() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  // PayPal Configuration
+  const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || "AfUDjefFU0bu7PJxDEHfIymomMIMHIwDvcw6bb3IHEs2FWg6pnk2ZJZ9sOfR50JmPWcLkM6CtG7Rn4AL";
+  const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
+  const PAYPAL_API_BASE = process.env.PAYPAL_API_BASE || "https://api-m.paypal.com";
+
+  async function getPayPalAccessToken() {
+    if (!PAYPAL_CLIENT_SECRET) {
+      throw new Error("PAYPAL_CLIENT_SECRET is not configured");
+    }
+    const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString("base64");
+    const response = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
+      method: "POST",
+      body: "grant_type=client_credentials",
+      headers: {
+        Authorization: `Basic ${auth}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`Failed to get PayPal access token: ${errorData}`);
+    }
+    
+    const data: any = await response.json();
+    return data.access_token;
+  }
+
+  app.post("/api/create-order", async (req, res) => {
+    try {
+      const { amount, currency = "USD" } = req.body;
+      const accessToken = await getPayPalAccessToken();
+      const response = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          intent: "CAPTURE",
+          purchase_units: [
+            {
+              amount: {
+                currency_code: currency,
+                value: amount.toString(),
+              },
+            },
+          ],
+        }),
+      });
+      
+      const data = await response.json();
+      res.json(data);
+    } catch (err: any) {
+      console.error("PayPal Create Order Error:", err);
+      res.status(500).json({ error: err.message || "Failed to create PayPal order" });
+    }
+  });
+
+  app.post("/api/capture-order", async (req, res) => {
+    try {
+      const { orderId } = req.body;
+      const accessToken = await getPayPalAccessToken();
+      const response = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders/${orderId}/capture`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      
+      const data = await response.json();
+      res.json(data);
+    } catch (err: any) {
+      console.error("PayPal Capture Order Error:", err);
+      res.status(500).json({ error: err.message || "Failed to capture PayPal order" });
+    }
+  });
+
   // Upload parser endpoint
   app.post("/api/documents/parse", upload.single("file"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
