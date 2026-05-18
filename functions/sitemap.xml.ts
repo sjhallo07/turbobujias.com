@@ -7,6 +7,7 @@ export const onRequest: PagesFunction = async () => {
     { loc: '/calentadores', priority: '0.9', changefreq: 'weekly' },
     { loc: '/filtros', priority: '0.9', changefreq: 'weekly' },
     { loc: '/diagnostico', priority: '0.8', changefreq: 'monthly' },
+    { loc: '/suplidor', priority: '0.8', changefreq: 'monthly' },
     { loc: '/asistente', priority: '0.8', changefreq: 'monthly' },
     { loc: '/contacto', priority: '0.7', changefreq: 'monthly' },
     { loc: '/nosotros', priority: '0.6', changefreq: 'monthly' },
