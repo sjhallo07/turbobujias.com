@@ -16,6 +16,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'  # Ensures submodules are cloned
 
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
@@ -24,5 +26,6 @@ jobs:
 
     - name: Build
       run: |
+        cd turbobujias/turbobujias.com
         npm install
         npx webpack
